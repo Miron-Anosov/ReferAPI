@@ -4,7 +4,7 @@ import json
 from typing import TYPE_CHECKING, Annotated, cast
 
 import pydantic
-from fastapi import Depends, Request, Response
+from fastapi import Depends, Header, Request, Response
 from jwt.exceptions import InvalidTokenError
 
 from src.core.controllers.depends.token import token_is_alive
@@ -24,7 +24,7 @@ from src.core.controllers.depends.utils.return_error import (
     valid_id_or_error_422,
 )
 from src.core.orm.models.refer import ReferORM
-from src.core.settings.constants import JWT, MessageError
+from src.core.settings.constants import JWT, Keys, MessageError
 from src.core.settings.env import settings
 from src.core.validators.token import TokenReferral
 from src.core.validators.user import User, UserReferrals
@@ -36,12 +36,17 @@ if TYPE_CHECKING:
 
 
 @cache_http_get(
-    expire=JWT.EXP_BY_EMAIL_OR_ID, prefix_key=JWT.PREFIX_BY_EMAIL_OR_ID
+    expire=JWT.EXP_BY_EMAIL_OR_ID,
+    prefix_key=JWT.PREFIX_BY_EMAIL_OR_ID,
+    request_query_params=True,
 )
 async def get_referrals_by_user_id(
     user_id: str,
     crud: Annotated["Crud", Depends(get_crud)],
     session: Annotated["AsyncSession", Depends(get_session)],
+    request: Request,
+    response: Response,
+    if_none_match: str | None = Header(default=None),
 ) -> "UserReferrals":
     """Return referral users by user ID.
 
@@ -49,6 +54,9 @@ async def get_referrals_by_user_id(
         session: AsyncSession
         crud: Crud
         user_id: str
+        request: Request
+        response: Response
+        if_none_match: Optional[str]
     Return:
         UserReferrals (access_token: str, token_type: str)
     """
@@ -60,6 +68,7 @@ async def get_referrals_by_user_id(
     user_data = cast(list[ReferORM], user_data)
 
     if not user_data:
+        print(request, response, if_none_match)
         raise_http_404(
             error_type=MessageError.TYPE_ERROR_404,
             error_message=MessageError.MESSAGE_NO_REFERRALS_FOUND,
@@ -72,23 +81,35 @@ async def get_referrals_by_user_id(
 
     return UserReferrals(
         id=user_id,
-        name=user_data[0].referrer.name if user_data else None,
+        name=(
+            user_data[Keys.REFERRER_INDEX].referrer.name if user_data else None
+        ),
         referrals=referrals_by_user_id,
     )
 
 
 @cache_http_get(
-    expire=JWT.EXP_BY_EMAIL_OR_ID, prefix_key=JWT.PREFIX_BY_EMAIL_OR_ID
+    expire=JWT.EXP_BY_EMAIL_OR_ID,
+    prefix_key=JWT.PREFIX_BY_EMAIL_OR_ID,
+    request_query_params=True,
 )
 async def referral_token_by_email(
     email: pydantic.EmailStr,
     crud: Annotated["Crud", Depends(get_crud)],
     session: Annotated["AsyncSession", Depends(get_session)],
+    request: Request,
+    response: Response,
+    if_none_match: str | None = Header(default=None),
 ) -> "TokenReferral":
     """GET token by email.
 
     Args:
-        - token (str): Access token for authentication.
+        email: User's email
+        crud: Crud
+        session: AsyncSession
+        request: Request
+        response: Response
+        if_none_match: Optional[str]
 
     Raises:
         HTTPException:
@@ -118,6 +139,7 @@ async def referral_token_by_email(
         return TokenReferral(**json.loads(token_data_from_chash))
 
     except ValueError:
+        print(request, response, if_none_match)
         raise_400_bad_req(
             error_type=MessageError.INVALID_TOKEN_ERR,
             error_message=MessageError.INVALID_REF_TOKEN_ERR_MESSAGE,
