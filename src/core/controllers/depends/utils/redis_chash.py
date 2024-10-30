@@ -1,5 +1,6 @@
 """Cache module for caching API responses with Redis."""
 
+import hashlib
 import json
 from functools import update_wrapper, wraps
 from typing import Any, Callable, Type
@@ -139,15 +140,20 @@ def deserialize_data(data: Any, return_type: Type[pydantic.BaseModel]) -> Any:
         raise e
 
 
+def gen_hash_from_req(req: Request) -> str:
+    """Gen hash from request params."""
+    return hashlib.md5(str(req.query_params.items()).encode()).hexdigest()
+
+
 def gen_key(
-    prefix_key: str,
-    id_user: str | int | None,
+    prefix_key: str, id_user: str | int | None, req: Request | None = None
 ) -> str:
     """Generate cache key from request parameters.
 
     Args:
         prefix_key (str): Prefix for cache key.
         id_user (str): User ID.
+        req (Request): Request parameters.
 
     Returns:
         str: Generated cache key.
@@ -155,6 +161,8 @@ def gen_key(
     keys = [prefix_key]
     if id_user:
         keys.append(str(id_user))
+    if req:
+        keys.append(gen_hash_from_req(req=req))
     return ":".join(keys)
 
 
@@ -274,7 +282,9 @@ async def select_request_and_response(**kwargs) -> tuple[Request, Response]:
     return request, response
 
 
-def cache_http_get(expire: int, prefix_key: str) -> Callable:
+def cache_http_get(
+    expire: int, prefix_key: str, request_query_params: bool = False
+) -> Callable:
     """Cache decorator for GET requests.
 
     Caches the response of GET requests using Redis. Only applies to
@@ -283,6 +293,7 @@ def cache_http_get(expire: int, prefix_key: str) -> Callable:
     Args:
         expire (int): Expiration time for cached data in seconds.
         prefix_key (str): Prefix to generate the cache key.
+        request_query_params (bool): apply values for cache from http request.
 
     Returns:
         Callable: Decorator function that wraps the original function.
@@ -296,17 +307,21 @@ def cache_http_get(expire: int, prefix_key: str) -> Callable:
             request, response = await select_request_and_response(**kwargs)
 
             if request.method == Keys.GET:
-                chash_dto = CacheDataDTO(
-                    pref_key=prefix_key,
-                    exp=expire,
-                    fun=function,
-                    return_type_ob=return_type,
-                )
-                await core_chash_decorator(
-                    chash_dto,
+
+                volume = await core_chash_decorator(
+                    CacheDataDTO(
+                        pref_key=prefix_key,
+                        exp=expire,
+                        fun=function,
+                        return_type_ob=return_type,
+                        req=request if request_query_params else None,
+                    ),
                     *args,
                     **kwargs,
                 )
+
+                return volume
+
             else:
                 return await function(*args, **kwargs)
 
@@ -348,15 +363,15 @@ def cache_http_singleton_value_by_user(
                 return True
 
             elif request.method == Keys.POST:
-                chash_dto = CacheDataDTO(
-                    pref_key=prefix_key,
-                    exp=expire,
-                    fun=func,
-                    return_type_ob=return_type,
-                    id_pers=user_id,
-                )
+
                 return await core_chash_decorator(
-                    chash_dto,
+                    CacheDataDTO(
+                        pref_key=prefix_key,
+                        exp=expire,
+                        fun=func,
+                        return_type_ob=return_type,
+                        id_pers=user_id,
+                    ),
                     *args,
                     **kwargs,
                 )
@@ -388,7 +403,9 @@ async def core_chash_decorator(
     request, response = await select_request_and_response(**kwargs)
 
     cache_key = gen_key(
-        prefix_key=chash_dto.pref_key, id_user=chash_dto.id_pers
+        prefix_key=chash_dto.pref_key,
+        id_user=chash_dto.id_pers,
+        req=chash_dto.req,
     )
 
     cached_value = await get_cache(cache_key=cache_key)
