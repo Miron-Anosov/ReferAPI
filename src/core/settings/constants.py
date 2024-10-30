@@ -282,6 +282,7 @@ class Keys:
     DELETE = "DELETE"
     AUTH_HEADER = "authorization"
     AUTH_HEADER_PREF_BEARER = 7
+    REFERRER_INDEX = 0
 
 
 class TypeEncoding:
