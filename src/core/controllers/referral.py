@@ -97,7 +97,7 @@ async def get_referral_by_email(
     """
     return JSONResponse(
         content=token.model_dump(),
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         media_type=MimeTypes.APPLICATION_JSON,
     )
 
