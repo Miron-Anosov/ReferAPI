@@ -1,0 +1,20 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    env.template,
+    .env,
+    .test.env,
+    poetry.lock,
+    README.md,
+    pyproject.toml,
+    .pre-commit-config.yaml,
+    Dockerfile,
+    problems.md,
+    task.md,
+    .gitignore,
+    .gitlab-ci.yml,
+    pytest.ini,
+    alembic/
+max-line-length = 79
+extend-ignore = F401
