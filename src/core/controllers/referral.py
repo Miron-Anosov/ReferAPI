@@ -5,8 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
-from src.core.controllers.depends.referrals import get_referrals_by_user_id
-from src.core.controllers.depends.token import (
+from src.core.controllers.depends.referrals import (
+    get_referrals_by_user_id,
     referral_token,
     referral_token_by_email,
 )
