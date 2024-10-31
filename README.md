@@ -22,7 +22,7 @@
 
 - **POST /api/auth/login**: Аутентификация пользователя и получение токена JWT
 - **POST /api/auth/token**: Обновление токена JWT по refresh JWT
-- **POST /api//auth/logout**: Удаление refresh JWT из куков.
+- **POST /api/auth/logout**: Удаление refresh JWT из куков.
 
 
 ## Как Запустить?
