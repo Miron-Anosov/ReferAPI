@@ -17,7 +17,7 @@ class Refer:
         id_referrer: str,
         id_referred: str,
         session: AsyncSession,
-        refer_table=ReferORM,
+        refer_table: type[ReferORM] = ReferORM,
     ) -> bool:
         """Add a new referral record.
 
