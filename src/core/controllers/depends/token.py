@@ -1,6 +1,6 @@
 """Depends-Check active user."""
 
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import APIKeyCookie, OAuth2PasswordBearer
