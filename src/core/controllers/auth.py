@@ -13,7 +13,6 @@ from src.core.settings.constants import (
     AuthRoutes,
     Headers,
     Response500,
-    ResponseError,
     ResponsesAuthUser,
 )
 from src.core.validators.status_ok import Status
