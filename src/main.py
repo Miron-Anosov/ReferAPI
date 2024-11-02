@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     """Maker FastAPI."""
     app_ = FastAPI(
         root_path=Prefix.API,
+        lifespan=lifespan,
     )
     app_.include_router(router=registration)
     app_.include_router(router=auth)
