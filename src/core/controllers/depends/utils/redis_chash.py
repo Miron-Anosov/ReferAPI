@@ -18,7 +18,7 @@ from src.core.controllers.depends.utils.token_from import (
 )
 from src.core.settings.constants import Headers, Keys, TypeEncoding
 from src.core.settings.env import settings
-from src.core.validators.chach_dto import CacheDataDTO
+from src.core.validators.cache_dto import CacheDataDTO
 
 
 def singleton(func: Callable) -> Callable:
